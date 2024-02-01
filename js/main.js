@@ -41,6 +41,7 @@ const sndGBM = new Howl({src : ['gbm.wav']});
 const sndKaskelott = new Howl({src : ['kaskelott.wav']});
 const sndKart = new Howl({src : ['kart.m4a']});
 sndKart.volume(0.1);
+sndKart.loop(true);
 var sprites = require('./spriteInfo');
 
 var pixelsPerMetre = 18;
@@ -49,9 +50,14 @@ var monsterDistanceThreshold = 1500;
 var monsterSpawnRate = 0.001;
 var livesLeft = 5;
 var highScore = 0;
+var treesHit = 0;
+var treesHitHighScore = 0;
+var treesHitDone = false;
+var startTime = new Date();
 var loseLifeOnObstacleHit = false;
 var dropRates = {smallTree: 4, tallTree: 2, jump: 1, thickSnow: 1, rock: 1};
 if (localStorage.getItem('highScore')) highScore = localStorage.getItem('highScore');
+if (localStorage.getItem('treesHitHighScore')) treesHitHighScore = localStorage.getItem('treesHitHighScore');
 
 function loadImages (sources, next) {
 	var loaded = 0;
@@ -96,9 +102,13 @@ function startNeverEndingGame (images) {
 	function resetGame () {
 		distanceTravelledInMetres = 0;
 		livesLeft = 5;
+		treesHit = 0;
+		treesHitDone = false;
 		highScore = localStorage.getItem('highScore');
+		treesHitHighScore = localStorage.getItem('treesHitHighScore');
 		game.reset();
 		game.addStaticObject(startSign);
+		startTime = new Date();
 	}
 
 	function detectEnd () {
@@ -151,6 +161,9 @@ function startNeverEndingGame (images) {
 
 		if (obs.data.obsType === "tree" || obs.data.obsType === "rock") {
 			sndAah.playing() || sndAah.play();
+			if (obs.data.obsType === "tree") {
+				treesHit++;
+			}
 		}
 		else if (obs.data.obsType === "snowboarder") {
 			sndKaskelott.playing() || sndKaskelott.play();
@@ -186,6 +199,8 @@ function startNeverEndingGame (images) {
 			infoBoxControls,
 			'Travelled 0m',
 			'High Score: ' + highScore,
+			'@highlightTrees hit: ' + treesHit,
+			'@highlightMost trees hit in 1 min: ' + treesHitHighScore,
 			'Skiers left: ' + livesLeft,
 			'Original created by Dan Hough (@basicallydan)',
 			'Made worse by mentalvary'
@@ -223,12 +238,28 @@ function startNeverEndingGame (images) {
 				randomlySpawnNPC(spawnMonster, monsterSpawnRate);
 			}
 
+			const elapsed = new Date() - startTime;
+			let remaining = elapsed;
+			const elmin = Math.floor(remaining / 60000);
+			remaining -= elmin * 60000
+			const elsec = Math.floor(remaining / 1000);
+			const elms = remaining - elsec * 1000;
+
+			if (elapsed >= 30000 && !treesHitDone && treesHit > treesHitHighScore) {
+				treesHitDone = true;
+				treesHitHighScore = treesHit
+				localStorage.setItem('treesHitHighScore', treesHitHighScore);
+			}
+
 			infoBox.setLines([
 				'SkiFree.js (Ela edition)',
 				infoBoxControls,
 				'Travelled ' + distanceTravelledInMetres + 'm',
 				'Skiers left: ' + livesLeft,
 				'High Score: ' + highScore,
+				'@highlightTime: ' + `${elmin}:${String(elsec).padStart(2, '0')}.${String(elms).padStart(3, '0')}`,
+				'@highlightTrees hit: ' + treesHit,
+				'@highlightMost trees hit in 30s: ' + treesHitHighScore,
 				'Original created by Dan Hough (@basicallydan)',
 				'Made worse by mentalvary',
 				'Current Speed: ' + player.getSpeed()/*,

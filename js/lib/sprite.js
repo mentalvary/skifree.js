@@ -377,7 +377,7 @@
 			var verticalIntersect = false;
 			var horizontalIntersect = false;
 			const fuzzinessVert = 15;
-			const fuzzinessHorz = 5;
+			const fuzzinessHorz = 0;
 
 			// Test that THIS has a bottom edge inside of the other object
 			if (other.getTopHitBoxEdge(that.mapPosition[2]) <= that.getBottomHitBoxEdge(that.mapPosition[2]) + fuzzinessVert && other.getBottomHitBoxEdge(that.mapPosition[2]) >= that.getBottomHitBoxEdge(that.mapPosition[2]) - fuzzinessVert) {

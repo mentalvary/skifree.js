@@ -20,6 +20,13 @@ function InfoBox(data) {
 		var yOffset = 0;
 		that.lines.each(function (line) {
 			var fontSize = +dContext.font.slice(0,2);
+			if (line.startsWith("@highlight")) {
+				dContext.fillStyle = 'red';
+				line = line.slice(10)
+			}
+			else {
+				dContext.fillStyle = 'black';
+			}
 			var textWidth = dContext.measureText(line).width;
 			var textHeight = fontSize * 1.5;
 			var xPos, yPos;
@@ -36,7 +43,6 @@ function InfoBox(data) {
 			}
 
 			yOffset += textHeight;
-
 
 			dContext.fillText(line, xPos, yPos);
 		});

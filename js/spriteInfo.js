@@ -30,7 +30,9 @@
 			hitBoxes: {
 				0: [ 0, 18, 30, 34 ]
 			},
-			hitBehaviour: {}
+			hitBehaviour: {},
+			closeBehaviour: {},
+			obsType: "tree"
 		},
 		'tallTree' : {
 			$imageFile : 'skifree-objects.png',
@@ -42,7 +44,9 @@
 				0: [0, 54, 32, 64],
 				1: [0, 10, 32, 54]
 			},
-			hitBehaviour: {}
+			hitBehaviour: {},
+			closeBehaviour: {},
+			obsType: "tree"
 		},
 		'thickSnow' : {
 			$imageFile : 'skifree-objects.png',
@@ -56,7 +60,8 @@
 			parts : {
 				main : [ 30, 52, 23, 11 ]
 			},
-			hitBehaviour: {}
+			hitBehaviour: {},
+			obsType: "rock"
 		},
 		'monster' : {
 			$imageFile : 'sprite-characters.png',
@@ -93,7 +98,8 @@
 				sEast : [ 73, 229, 20, 29 ],
 				sWest : [ 95, 228, 26, 30 ]
 			},
-			hitBehaviour: {}
+			hitBehaviour: {},
+			obsType: "snowboarder"
 		},
 		'emptyChairLift': {
 			$imageFile : 'skifree-objects.png',
@@ -116,17 +122,24 @@
 
 	sprites.smallTree.hitBehaviour.monster = treeHitsMonsterBehaviour;
 	sprites.tallTree.hitBehaviour.monster = treeHitsMonsterBehaviour;
+	
 
 	function skierHitsTreeBehaviour(skier, tree) {
-		skier.hasHitObstacle(tree);
+		skier.hasHitObstacle(tree);		
 	}
 
 	function treeHitsSkierBehaviour(tree, skier) {
 		skier.hasHitObstacle(tree);
 	}
 
+	function treeCloseSkierBehaviour(tree, skier) {
+		skier.hasCloseObstacle(tree);
+	}
+
 	sprites.smallTree.hitBehaviour.skier = treeHitsSkierBehaviour;
 	sprites.tallTree.hitBehaviour.skier = treeHitsSkierBehaviour;
+	sprites.smallTree.closeBehaviour.skier = treeCloseSkierBehaviour;
+	sprites.tallTree.closeBehaviour.skier = treeCloseSkierBehaviour;
 
 	function rockHitsSkierBehaviour(rock, skier) {
 		skier.hasHitObstacle(rock);

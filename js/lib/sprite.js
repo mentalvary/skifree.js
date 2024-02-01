@@ -2,6 +2,7 @@
 	var GUID = require('./guid');
 	function Sprite (data) {
 		var hittableObjects = {};
+		var closableObjects = {}
 		var zIndexesOccupied = [ 0 ];
 		var that = this;
 		var trackedSpriteToMoveToward;
@@ -241,7 +242,22 @@
 			});
 		};
 
+		this.checkCloseObjects = function () {
+			Object.keys(closableObjects, function (k, objectData) {
+				if (objectData.object.deleted) {
+					delete closableObjects[k];
+				} else {
+					if (objectData.object.isClose(that)) {
+						objectData.callbacks.each(function (callback) {
+							callback(that, objectData.object);
+						});
+					}
+				}
+			});
+		};
+
 		this.cycle = function () {
+			that.checkCloseObjects();
 			that.checkHittableObjects();
 
 			if (trackedSpriteToMoveToward) {
@@ -311,6 +327,17 @@
 			};
 		};
 
+		this.onClose = function (objectToHit, callback) {
+			if (closableObjects[objectToHit.id]) {
+				return closableObjects[objectToHit.id].callbacks.push(callback);
+			}
+
+			closableObjects[objectToHit.id] = {
+				object: objectToHit,
+				callbacks: [ callback ]
+			};
+		};
+
 		this.deleteOnNextCycle = function () {
 			that.deleted = true;
 		};
@@ -340,6 +367,35 @@
 
 			// Test that THIS has a left edge inside of the other object
 			if (other.getLeftHitBoxEdge(that.mapPosition[2]) <= that.getLeftHitBoxEdge(that.mapPosition[2]) && other.getRightHitBoxEdge(that.mapPosition[2]) >= that.getLeftHitBoxEdge(that.mapPosition[2])) {
+				horizontalIntersect = true;
+			}
+
+			return verticalIntersect && horizontalIntersect;
+		};
+
+		this.isClose = function (other) {
+			var verticalIntersect = false;
+			var horizontalIntersect = false;
+			const fuzzinessVert = 15;
+			const fuzzinessHorz = 5;
+
+			// Test that THIS has a bottom edge inside of the other object
+			if (other.getTopHitBoxEdge(that.mapPosition[2]) <= that.getBottomHitBoxEdge(that.mapPosition[2]) + fuzzinessVert && other.getBottomHitBoxEdge(that.mapPosition[2]) >= that.getBottomHitBoxEdge(that.mapPosition[2]) - fuzzinessVert) {
+				verticalIntersect = true;
+			}
+
+			// Test that THIS has a top edge inside of the other object
+			if (other.getTopHitBoxEdge(that.mapPosition[2]) <= that.getTopHitBoxEdge(that.mapPosition[2]) + fuzzinessVert && other.getBottomHitBoxEdge(that.mapPosition[2]) >= that.getTopHitBoxEdge(that.mapPosition[2]) - fuzzinessVert) {
+				verticalIntersect = true;
+			}
+
+			// Test that THIS has a right edge inside of the other object
+			if (other.getLeftHitBoxEdge(that.mapPosition[2]) <= that.getRightHitBoxEdge(that.mapPosition[2]) + fuzzinessHorz && other.getRightHitBoxEdge(that.mapPosition[2]) >= that.getRightHitBoxEdge(that.mapPosition[2]) - fuzzinessHorz) {
+				horizontalIntersect = true;
+			}
+
+			// Test that THIS has a left edge inside of the other object
+			if (other.getLeftHitBoxEdge(that.mapPosition[2]) <= that.getLeftHitBoxEdge(that.mapPosition[2]) + fuzzinessHorz && other.getRightHitBoxEdge(that.mapPosition[2]) >= that.getLeftHitBoxEdge(that.mapPosition[2]) - fuzzinessHorz) {
 				horizontalIntersect = true;
 			}
 
@@ -378,8 +434,12 @@
 				sprite.setMapPosition(position[0], position[1]);
 
 				if (spriteInfo.sprite.hitBehaviour && spriteInfo.sprite.hitBehaviour.skier && opts.player) {
-					sprite.onHitting(opts.player, spriteInfo.sprite.hitBehaviour.skier);
+					sprite.onHitting(opts.player, spriteInfo.sprite.hitBehaviour.skier);					
 				}
+
+				if (spriteInfo.sprite.closeBehaviour && spriteInfo.sprite.closeBehaviour.skier && opts.player) {
+					sprite.onClose(opts.player, spriteInfo.sprite.closeBehaviour.skier);
+				}				
 
 				return sprite;
 			}

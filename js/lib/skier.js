@@ -27,7 +27,8 @@ if (typeof navigator !== 'undefined') {
 			cycle: that.superior('cycle'),
 			getSpeedX: that.superior('getSpeedX'),
 			getSpeedY: that.superior('getSpeedY'),
-			hits: that.superior('hits')
+			hits: that.superior('hits'),
+			isClose: that.superior('isClose')
 		};
 		var directions = {
 			esEast: function(xDiff) { return xDiff > 300; },
@@ -42,6 +43,7 @@ if (typeof navigator !== 'undefined') {
 		var canSpeedBoost = true;
 
 		var obstaclesHit = [];
+		var obstaclesClose = [];
 		var pixelsTravelled = 0;
 		var standardSpeed = 5;
 		var boostMultiplier = 2;
@@ -57,6 +59,7 @@ if (typeof navigator !== 'undefined') {
 		that.isJumping = false;
 		that.isPerformingTrick = false;
 		that.onHitObstacleCb = function() {};
+		that.onCloseObstacleCb = function() {};
 		that.setSpeed(standardSpeed);
 
 		that.reset = function () {
@@ -333,6 +336,22 @@ if (typeof navigator !== 'undefined') {
 			return false;
 		};
 
+		that.isClose = function (obs) {
+			if (obstaclesClose.indexOf(obs.id) !== -1) {
+				return false;
+			}
+
+			if (!obs.occupiesZIndex(that.mapPosition[2])) {
+				return false;
+			}
+
+			if (sup.isClose(obs)) {
+				return true;
+			}
+
+			return false;
+		};
+
 		that.speedBoost = function () {
 			var originalSpeed = that.speed;
 			if (canSpeedBoost) {
@@ -461,8 +480,13 @@ if (typeof navigator !== 'undefined') {
 			}, 1500);
 		};
 
+		that.hasCloseObstacle = function (obs) {
+			obstaclesClose.push(obs.id);
+			that.onCloseObstacleCb(obs);
+		};
+
 		that.hasHitJump = function () {
-			setJumping();
+			setJumping();	
 
 			if (cancelableStateTimeout) {
 				clearTimeout(cancelableStateTimeout);
@@ -482,6 +506,7 @@ if (typeof navigator !== 'undefined') {
 
 		that.reset = function () {
 			obstaclesHit = [];
+			obstaclesClose = [];
 			pixelsTravelled = 0;
 			that.isMoving = true;
 			that.isJumping = false;

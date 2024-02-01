@@ -6,6 +6,7 @@ require('./lib/plugins');
 // External dependencies
 var Hammer = require('hammerjs');
 var Mousetrap = require('br-mousetrap');
+const {Howl, Howler} = require('howler');
 
 // Method modules
 var isMobileDevice = require('./lib/isMobileDevice');
@@ -20,17 +21,32 @@ var InfoBox = require('./lib/infoBox');
 var Game = require('./lib/game');
 
 // Local variables for starting the game
+var splashScreen = document.getElementById('splash');
+var startButton = document.getElementById('start-btn');
 var mainCanvas = document.getElementById('skifree-canvas');
 var dContext = mainCanvas.getContext('2d');
 var imageSources = [ 'sprite-characters.png', 'skifree-objects.png' ];
 var global = this;
 var infoBoxControls = 'Use the mouse or WASD to control the player';
 if (isMobileDevice()) infoBoxControls = 'Tap or drag on the piste to control the player';
+
+const sndOhGodTree = new Howl({src : ['ohgodtree.wav']});
+const sndAah = new Howl({src : ['aah.wav']});
+const sndBat = new Howl({src : ['bat.wav']});
+const sndScream = new Howl({src : ['fall_scream.wav']});
+const sndElaTime = new Howl({src : ['its_ela_time.wav']});
+const sndRoar = new Howl({src : ['roar.wav']});
+const sndCry = new Howl({src : ['soycry.wav']});
+const sndGBM = new Howl({src : ['gbm.wav']});
+const sndKaskelott = new Howl({src : ['kaskelott.wav']});
+const sndKart = new Howl({src : ['kart.m4a']});
+sndKart.volume(0.1);
 var sprites = require('./spriteInfo');
 
 var pixelsPerMetre = 18;
 var distanceTravelledInMetres = 0;
-var monsterDistanceThreshold = 2000;
+var monsterDistanceThreshold = 1500;
+var monsterSpawnRate = 0.001;
 var livesLeft = 5;
 var highScore = 0;
 var loseLifeOnObstacleHit = false;
@@ -57,6 +73,8 @@ function loadImages (sources, next) {
 }
 
 function monsterHitsSkierBehaviour(monster, skier) {
+	sndRoar.playing() || sndRoar.play();
+	setTimeout(function() {sndScream.playing() || sndScream.play()}, 1000);
 	skier.isEatenBy(monster, function () {
 		livesLeft -= 1;
 		monster.isFull = true;
@@ -109,6 +127,8 @@ function startNeverEndingGame (images) {
 		newMonster.follow(player);
 		newMonster.setSpeed(player.getStandardSpeed());
 		newMonster.onHitting(player, monsterHitsSkierBehaviour);
+		sndGBM.playing() || sndGBM.play()
+		setTimeout(function() {sndCry.playing() || sndCry.play()}, 1500);
 
 		game.addMovingObject(newMonster, 'monster');
 	}
@@ -127,11 +147,31 @@ function startNeverEndingGame (images) {
 	player = new Skier(sprites.skier);
 	player.setMapPosition(0, 0);
 	player.setMapPositionTarget(0, -10);
-	if ( loseLifeOnObstacleHit ) {
-		player.setHitObstacleCb(function() {
-			livesLeft -= 1;
-		});
+	player.setHitObstacleCb(function(obs) {
+
+		if (obs.data.obsType === "tree" || obs.data.obsType === "rock") {
+			sndAah.playing() || sndAah.play();
+		}
+		else if (obs.data.obsType === "snowboarder") {
+			sndKaskelott.playing() || sndKaskelott.play();
+		}
+	});
+	player.onCloseObstacleCb = function(obs) {
+		// console.log(obs.data.obsType);
+		if (obs.data.obsType === "tree") {
+			sndOhGodTree.playing() || sndOhGodTree.play();
+		}
 	}
+	const _hasHitJump = player.hasHitJump
+	player.hasHitJump = function() {
+		sndBat.playing() || sndBat.play();
+		_hasHitJump();
+	}
+	// if ( loseLifeOnObstacleHit ) {
+	// 	player.setHitObstacleCb(function() {
+	// 		livesLeft -= 1;
+	// 	});
+	// }
 
 	game = new Game(mainCanvas, player);
 
@@ -142,12 +182,13 @@ function startNeverEndingGame (images) {
 
 	infoBox = new InfoBox({
 		initialLines : [
-			'SkiFree.js',
+			'SkiFree.js (Ela edition)',
 			infoBoxControls,
 			'Travelled 0m',
 			'High Score: ' + highScore,
 			'Skiers left: ' + livesLeft,
-			'Created by Dan Hough (@basicallydan)'
+			'Original created by Dan Hough (@basicallydan)',
+			'Made worse by mentalvary'
 		],
 		position: {
 			top: 15,
@@ -179,16 +220,17 @@ function startNeverEndingGame (images) {
 			distanceTravelledInMetres = parseFloat(player.getPixelsTravelledDownMountain() / pixelsPerMetre).toFixed(1);
 
 			if (distanceTravelledInMetres > monsterDistanceThreshold) {
-				randomlySpawnNPC(spawnMonster, 0.001);
+				randomlySpawnNPC(spawnMonster, monsterSpawnRate);
 			}
 
 			infoBox.setLines([
-				'SkiFree.js',
+				'SkiFree.js (Ela edition)',
 				infoBoxControls,
 				'Travelled ' + distanceTravelledInMetres + 'm',
 				'Skiers left: ' + livesLeft,
 				'High Score: ' + highScore,
-				'Created by Dan Hough (@basicallydan)',
+				'Original created by Dan Hough (@basicallydan)',
+				'Made worse by mentalvary',
 				'Current Speed: ' + player.getSpeed()/*,
 				'Skier Map Position: ' + player.mapPosition[0].toFixed(1) + ', ' + player.mapPosition[1].toFixed(1),
 				'Mouse Map Position: ' + mouseMapPosition[0].toFixed(1) + ', ' + mouseMapPosition[1].toFixed(1)*/
@@ -265,8 +307,21 @@ function startNeverEndingGame (images) {
 	player.isMoving = false;
 	player.setDirection(270);
 
+	_start = game.start;
+	game.start = function() {
+		sndElaTime.playing() || sndElaTime.play();
+		sndKart.playing() && sndKart.stop();
+		setTimeout(function() {
+			sndKart.stop();
+			sndKart.play();
+		}, 5000);
+		
+		_start();
+	};
+
 	game.start();
 }
+
 
 function resizeCanvas() {
 	mainCanvas.width = window.innerWidth;
@@ -277,6 +332,11 @@ window.addEventListener('resize', resizeCanvas, false);
 
 resizeCanvas();
 
-loadImages(imageSources, startNeverEndingGame);
+function start() {
+	splashScreen.remove();
+	loadImages(imageSources, startNeverEndingGame);
+}
+
+startButton.onclick = start;
 
 this.exports = window;

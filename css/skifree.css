@@ -77,6 +77,14 @@
 	background: url('../demake.gif') no-repeat; 
 	background-size: cover; 
 	z-index: 9999;
+	text-align: center;
+}
+
+#title {
+	font-size: 400%;
+	padding-top: 2em;
+	color: cyan;
+	-webkit-text-stroke: 1px black;
 }
 
 #start-btn {
